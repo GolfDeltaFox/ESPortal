@@ -100,7 +100,7 @@ boolean connect_from_file(String filePath, int timeout, int retry){
     cmdJsonBuffer = new DynamicJsonBuffer;
     config_json = &cmdJsonBuffer->parseObject(file.readString());
     String ssid = (*config_json)["ssid"].as<String>();
-    String password = (*config_json)["password"].as<String>();
+    String password = (*config_json)["pwd"].as<String>();
     ssid.replace("\r","");
     password.replace("\r","");
     boolean wifi_success = connect(ssid, password, timeout, retry);
