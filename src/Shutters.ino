@@ -1,6 +1,6 @@
 #include <ESP8266WiFi.h>
 #include <ESP8266HTTPClient.h>
-#include <ESP8266WebServer.h>
+// #include <ESP8266WebServer.h>
 #include <ESP8266mDNS.h>
 #define ARDUINOJSON_ENABLE_ARDUINO_STRING 1
 #include <ArduinoJson.h>
@@ -16,7 +16,7 @@ JsonObject* config_json;
 // SHA1 fingerprint of the certificate
 const char* fingerprint = "27 6F AA EF 5D 8E CE F8 8E 6E 1E 48 04 A1 58 E2 65 E8 C9 34";
 bool setup_mode = false;
-ESP8266WebServer server(80);
+// ESP8266WebServer old_server(80);
 String escape(String unescaped){
   unescaped.remove(0, 1);
   unescaped.remove(unescaped.length()-2, 1);
@@ -45,10 +45,10 @@ int callback_relay(String line){
   Serial.println(thisjson);
   Serial.println(thisjson=="up");
   if(thisjson=="up"){
-    digitalWrite(D7, HIGH);
+    digitalWrite(13, HIGH);
   }
   else{
-    digitalWrite(D7, LOW);
+    digitalWrite(13 , LOW);
   }
   return 0;
 }
@@ -159,9 +159,10 @@ String httpGET(String domain, String url, boolean chunck, GeneralFunction callba
   return line;
 }
 
+
 void setup() {
   Serial.begin(115200);
-  pinMode(D7, OUTPUT);
+  pinMode(13, OUTPUT);
   pinMode(LED_BUILTIN, OUTPUT);
   SPIFFS.begin();
   //Letting time for SPIFFS to startup
@@ -223,22 +224,17 @@ void perform_actuator(String platform, JsonObject& actuator){
 void loop() {
   {
     if(setup_mode){
-      server.handleClient();
+      // old_server.handleClient();
     }
     else{
       String platform = (*config_json)["platform"];
       JsonArray& actuators = (*config_json)["actuators"];
       Serial.println(platform);
-      // String tmp = actuators[0]["name"];
+      
       for (auto& actuator : actuators){
         perform_actuator(platform, actuator);
       }
-      // for( const auto& kv : actuators.asd) {
-      //     Serial.println(kv.key);
-      //     Serial.println(kv.value);
-      // }
-      // String url = "/get/latest/dweet/for/ESPfan1";
-      // httpPingGET(host, url, callback);
+
     }
   }
   delay(2000);
