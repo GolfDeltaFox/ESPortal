@@ -5,6 +5,7 @@
 #define ARDUINOJSON_ENABLE_ARDUINO_STRING 1
 #include <ArduinoJson.h>
 #include <FS.h>
+#include "CaptivePortal.h"
 
 const char* host = "dweet.io";
 const int httpsPort = 443;
@@ -31,24 +32,92 @@ String escape(String unescaped){
   return result;
 }
 
+uint8_t pinToEspPin(String pinStr){
+  if(pinStr=="0"){
+    return D0;
+  }
+  else if (pinStr=="1")
+  {
+    return D1;
+  }
+  else if (pinStr=="2")
+  {
+    return D2;
+  }
+  else if (pinStr=="3")
+  {
+    return D3;
+  }
+  else if (pinStr=="4")
+  {
+    return D4;
+  }
+  else if (pinStr=="5")
+  {
+    return D5;
+  }
+  else if (pinStr=="6")
+  {
+    return D6;
+  }
+  else if (pinStr=="7")
+  {
+    return D7;
+  }
+  else if (pinStr=="8")
+  {
+    return D8;
+  }
+  else{
+    return D0;
+  }
+}
+
+int pinToGpioPin(String pinStr){
+  return pinStr.toInt();
+}
+
+uint8_t* getPins(uint8_t EspPins[], String thingName, bool actuator){
+    int i = 0;
+    JsonArray& actuators = (*config_json)["actuators"];
+    for (auto& actuator : actuators){
+        if(actuator["name"] == thingName){
+          JsonArray& pins = actuator["pins"];
+          for (String pin : pins){
+            Serial.println(pin);
+            EspPins[i] = pinToEspPin(pin);
+          }
+        }
+    }
+}
+
+
 int callback_relay(String line){
 
   StaticJsonBuffer<400> jsonBuffer;
-
+  
 
   Serial.println("calledback with :");
   Serial.println(line);
   // line = escape(line);
   JsonObject& root = jsonBuffer.parseObject(line);
   const String thisjson = root["with"][0]["content"]["status"];
+  const String currentThing = root["with"][0]["thing"];
+  uint8_t pins[10];
+  getPins(pins, currentThing, true);
   Serial.println("result:");
   Serial.println(thisjson);
   Serial.println(thisjson=="up");
+  // int* pins = getPins(currentThing, true);
+  Serial.println("pins[0]");
+  Serial.println(pins[0]);
+
+
   if(thisjson=="up"){
-    digitalWrite(13, HIGH);
+    digitalWrite(pins[0], HIGH);
   }
   else{
-    digitalWrite(13 , LOW);
+    digitalWrite(pins[0] , LOW);
   }
   return 0;
 }
@@ -159,11 +228,26 @@ String httpGET(String domain, String url, boolean chunck, GeneralFunction callba
   return line;
 }
 
+void apply_config(){
+  File config = SPIFFS.open("/configuration.json", "r");
+  DynamicJsonBuffer *cmdJsonBuffer;
+  cmdJsonBuffer = new DynamicJsonBuffer;
+  config_json = &cmdJsonBuffer->parseObject(config.readString());
+  // String ssid = (*conf_json)["ssid"];
+}
+
 
 void setup() {
   Serial.begin(115200);
-  pinMode(13, OUTPUT);
-  pinMode(LED_BUILTIN, OUTPUT);
+  pinMode(D5, OUTPUT);
+  pinMode(D6, OUTPUT);
+  pinMode(D7, OUTPUT);
+  pinMode(D8, OUTPUT);
+  pinMode(D0, INPUT);
+  pinMode(D1, INPUT);
+  pinMode(D2, INPUT);
+  pinMode(D3, INPUT);
+  pinMode(D4, INPUT);
   SPIFFS.begin();
   //Letting time for SPIFFS to startup
   delay(1000);
@@ -201,13 +285,6 @@ void setup() {
   // Serial.println(WiFi.localIP());
 }
 
-void apply_config(){
-  File config = SPIFFS.open("/configuration.json", "r");
-  DynamicJsonBuffer *cmdJsonBuffer;
-  cmdJsonBuffer = new DynamicJsonBuffer;
-  config_json = &cmdJsonBuffer->parseObject(config.readString());
-  // String ssid = (*conf_json)["ssid"];
-}
 
 
 void perform_actuator(String platform, JsonObject& actuator){

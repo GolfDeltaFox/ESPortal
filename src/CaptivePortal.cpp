@@ -1,10 +1,14 @@
 // #include <ESP8266WiFi.h>
 // #include <WiFiClient.h>
 // #include <ESP8266WebServer.h>
+
+
 #include <ESPAsyncTCP.h>
 #include <ESPAsyncWebServer.h>
 #include <ESP8266mDNS.h>
 #include <ArduinoJson.h>
+
+#include "CaptivePortal.h"
 
 AsyncWebServer server(80);
 String ssids = "";
@@ -72,7 +76,7 @@ boolean connect(String ssid, String password, int timeout, int retry){
 //
 // void serve_css(){
 //   Serial.println("serve_css");
-//   File f = SPIFFS.open("/static/css/main.04f11c10.css", "r");
+//   File f = SPIFFS.open("/static/css/main.97675db6.css", "r");
 //   Serial.println("loaded");
 //   String filestr = f.readString();
 //   Serial.println("read");
@@ -83,7 +87,7 @@ boolean connect(String ssid, String password, int timeout, int retry){
 //
 // void serve_js(){
 //   Serial.println("serve_js");
-//   File f = SPIFFS.open("/static/css/main.4bee1f99.js", "r");
+//   File f = SPIFFS.open("/static/css/main.97675db6.js", "r");
 //   Serial.println("loaded");
 //   String filestr = f.readString();
 //   Serial.println("read");
@@ -98,9 +102,9 @@ boolean connect_from_file(String filePath, int timeout, int retry){
     Serial.println("connection from file :");
     DynamicJsonBuffer *cmdJsonBuffer;
     cmdJsonBuffer = new DynamicJsonBuffer;
-    config_json = &cmdJsonBuffer->parseObject(file.readString());
-    String ssid = (*config_json)["ssid"].as<String>();
-    String password = (*config_json)["pwd"].as<String>();
+    JsonObject* tmp_config_json = &cmdJsonBuffer->parseObject(file.readString());
+    String ssid = (*tmp_config_json)["ssid"].as<String>();
+    String password = (*tmp_config_json)["pwd"].as<String>();
     ssid.replace("\r","");
     password.replace("\r","");
     boolean wifi_success = connect(ssid, password, timeout, retry);
@@ -163,7 +167,7 @@ void setup_portal(void){
 
 
 
-  server.on("/configuration", HTTP_POST,
+  server.on("/", HTTP_POST,
     [](AsyncWebServerRequest *request)
     {
       Serial.println("1");
@@ -205,67 +209,76 @@ void setup_portal(void){
   //       Serial.println(json);
   //     }
 
-      // StaticJsonBuffer<500> jsonBuffer;
-      // JsonObject& config_json = jsonBuffer.parseObject((const char*)data);
-      // if (!config_json.success()) request->send(200, "text/plain", "bad json.");
-      // String ssid = config_json["ssid"];
-      // String password = config_json["pwd"];
-      // boolean wifi_success = connect(ssid, password, 30, 2);
-      // Serial.println(wifi_success);
-      // if(wifi_success){
-      //   // return "Device connected.";
-      //   delay(2000);
-      //   Serial.println("Saving credentials");
-      //   SPIFFS.remove("/configuration.json");
-      //   File f = SPIFFS.open("/configuration.json", "w");
-      //   config_json.printTo(f);
-      //   delay(1000);
-      //   f.close();
-      //   WiFi.softAPdisconnect();
-      //   ESP.reset();
-      //   ESP.restart();
-      //   request->send(200, "text/plain", "Good.");
-      // }
-      // else{
-      //   request->send(200, "text/plain", "Bad.");
-      //
-      // }
+  //     StaticJsonBuffer<500> jsonBuffer;
+  //     JsonObject& config_json = jsonBuffer.parseObject((const char*)data);
+  //     if (!config_json.success()) request->send(200, "text/plain", "bad json.");
+  //     String ssid = config_json["ssid"];
+  //     String password = config_json["pwd"];
+  //     boolean wifi_success = connect(ssid, password, 30, 2);
+  //     Serial.println(wifi_success);
+  //     if(wifi_success){
+  //       // return "Device connected.";
+  //       delay(2000);
+  //       Serial.println("Saving credentials");
+  //       SPIFFS.remove("/configuration.json");
+  //       File f = SPIFFS.open("/configuration.json", "w");
+  //       config_json.printTo(f);
+  //       delay(1000);
+  //       f.close();
+  //       WiFi.softAPdisconnect();
+  //       ESP.reset();
+  //       ESP.restart();
+  //       request->send(200, "text/plain", "Good.");
+  //     }
+  //     else{
+  //       request->send(200, "text/plain", "Bad.");
+      
+  //     }
   // });
 
-  // server.on("/configuration", HTTP_POST, [](AsyncWebServerRequest *request){
+  // server.on("/", HTTP_POST, [](AsyncWebServerRequest *request){
   //   Serial.println("Config received");
-  //   String config_json = request->getParam("body", true)->value();
-  //   Serial.println(config_json);
-    // StaticJsonBuffer<400> jsonBuffer;
-    // JsonObject& data = jsonBuffer.parseObject(config_json);
-    // String ssid = data["ssid"];
-    // String password = data["pwd"];
-    // boolean wifi_success = connect(ssid, password, 30, 2);
-    // Serial.println(wifi_success);
-    // if(wifi_success){
-    //   request->send(200, "text/plain", "Device connected.");
-    //
-    //   delay(2000);
-    //   Serial.println("Saving credentials");
-    //   SPIFFS.remove("/configuration.json");
-    //   File f = SPIFFS.open("/configuration.json", "w");
-    //   data.printTo(f);
-    //   delay(1000);
-    //   f.close();
-    //   WiFi.softAPdisconnect();
-    //   ESP.reset();
-    //   ESP.restart();
-    // }
-    // else{
-    //   request->send(200, "text/plain", "Wrong wifi credentials.");
-    // }
+  //   request->send(200, "text/plain", "Config received.");
+  //   if(request->hasParam("body", true))
+  //   {
+  //     AsyncWebParameter* p = request->getParam("body", true);
+  //     String json = p->value();
+  //     Serial.println(json);
+  //   }
+  //   else{
+  //           Serial.println("no body");
+  //   }
+  //   // StaticJsonBuffer<400> jsonBuffer;
+  //   // JsonObject& data = jsonBuffer.parseObject(config_json);
+  //   // String ssid = data["ssid"];
+  //   // String password = data["pwd"];
+  //   // boolean wifi_success = connect(ssid, password, 30, 2);
+  //   // Serial.println(wifi_success);
+  //   // if(wifi_success){
+  //   //   request->send(200, "text/plain", "Device connected.");
+    
+  //   //   delay(2000);
+  //   //   Serial.println("Saving credentials");
+  //   //   SPIFFS.remove("/configuration.json");
+  //   //   File f = SPIFFS.open("/configuration.json", "w");
+  //   //   data.printTo(f);
+  //   //   delay(1000);
+  //   //   f.close();
+  //   //   WiFi.softAPdisconnect();
+  //   //   ESP.reset();
+  //   //   ESP.restart();
+  //   // }
+  //   // else{ 
+  //   //   request->send(200, "text/plain", "Wrong wifi credentials.");
+  //   // }
 
   // });
+
 
   // server.on("/ssids", GETCachedSsids);
   // server.on("/configuration", POSTConfigurationHandler);
-  // server.on("/static/js/main.4bee1f99.js", serve_js);
-  // server.on("/static/css/main.04f11c10.css", serve_css);
+  // server.on("/static/js/main.97675db6.js", serve_js);
+  // server.on("/static/css/main.97675db6.css", serve_css);
   // server.on("/", serve_index);
 
   // server.on("./css/style.css", serve_file);
@@ -274,9 +287,14 @@ void setup_portal(void){
   // server.on("css/style.css", serve_file);
   // server.serveStatic("/static",  SPIFFS, "/static" ,"max-age=86400");
   // server.serveStatic("/",  SPIFFS, "/index.html", "max-age=31536000");
+
+  // server.on("/", HTTP_GET, [](AsyncWebServerRequest *request){
+  //     request->send(SPIFFS, "/index.html", String(), false, ssids);
+  //   });
+
   server.serveStatic("/", SPIFFS, "/").setDefaultFile("index.html");
-  server.serveStatic("/static/js/main.4bee1f99.js", SPIFFS, "/static/js/main.4bee1f99.js");
-  server.serveStatic("/static/css/main.04f11c10.css", SPIFFS, "/static/css/main.04f11c10.css");
+  server.serveStatic("/static/js/main.97675db6.js", SPIFFS, "/static/js/main.97675db6.js");
+  server.serveStatic("/static/css/main.97675db6.css", SPIFFS, "/static/css/main.97675db6.css");
   // server.serveStatic("/asset-manifest.json",  SPIFFS, "/asset-manifest.json" ,"max-age=86400");
   // server.serveStatic("/manifest.json",  SPIFFS, "/manifest.json" ,"max-age=86400");
   // server.serveStatic("/service-worker.js",  SPIFFS, "/service-worker.js", "max-age=86400");
